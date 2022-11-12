@@ -8,8 +8,12 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"strconv"
 	"time"
+	"net/http"
+	"encoding/json"
+	"fmt"
 )
 
+var client *http.Client
 const SecretKey = "AlgoSecreto"
 
 func Register(c *fiber.Ctx) error {
@@ -120,4 +124,90 @@ func Logout (c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"Message": "All success",
 	})
+}
+
+
+func GetJson(url string, target interface{}) error {
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return json.NewDecoder(resp.Body).Decode(target)
+}
+
+func GetRandomMusic(c *fiber.Ctx) error {
+
+	cookie := c.Cookies("jwt")
+
+	_, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SecretKey), nil
+	})
+
+	// database.DB.Where("id = ?", claims.Issuer).First(&user)
+
+	if err != nil {
+		c.Status(fiber.StatusUnauthorized)
+		return c.JSON(fiber.Map{
+			"message": "unauthenticated",
+		})
+	}
+
+	url := "https://itunes.apple.com/search?term=jack+johnson"
+
+	var music models.RandomMusic
+	client = &http.Client{Timeout: 10 * time.Second}
+	er := GetJson(url, &music)
+
+	if er != nil {
+		// fmt.Printf("error getting music: %s\n", err.Error())
+		return c.JSON(fiber.Map{
+			"Message": "error getting music",
+		})
+	} else {
+		// fmt.Println(music.Results)
+		musicStored := []models.Music{}
+		for _, mus := range music.Results {
+			musicStored = append(musicStored, mus)
+		}
+		fmt.Println(musicStored)
+
+		for _, elem := range musicStored {
+			var music = models.Music {
+				TrackId: elem.TrackId,
+				TrackName: elem.TrackName,
+				ArtistName: elem.ArtistName,
+				TrackTimeMillis: elem.TrackTimeMillis,
+				CollectionName: elem.CollectionName,
+				ArtworkUrl30: elem.ArtworkUrl30,
+				TrackPrice: elem.TrackPrice,
+				Country: elem.Country,
+			}
+			database.DB.Create(&music)
+		}
+		// artist := music.Results[0].ArtistName
+		// artWork := music.Results[0].ArtworkUrl30
+		// collectionName := music.Results[0].CollectionName
+		// country := music.Results[0].Country
+		// trackname := music.Results[0].TrackName
+		// trackId := music.Results[0].TrackId
+		// price := music.Results[0].TrackPrice
+		// duration := music.Results[0].TrackTimeMillis
+
+		
+		return c.JSON(fiber.Map{
+			"Message": "Success",
+		})
+
+		// fmt.Printf("Music here: %s %s %s %s %s %s %s %s\n", music.Results[0].ArtistName,
+		// 	music.Results[0].ArtworkUrl30,
+		// 	music.Results[0].CollectionName,
+		// 	music.Results[0].Country,
+		// 	music.Results[0].TrackName,
+		// 	music.Results[0].TrackId,
+		// 	music.Results[0].TrackPrice,
+		// 	music.Results[0].TrackTimeMillis)
+	}
 }

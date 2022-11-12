@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"api/ex/v2/controllers"
+	"github.com/gofiber/fiber/v2"
 )
 
 func SetUp(app *fiber.App) {
@@ -10,4 +10,5 @@ func SetUp(app *fiber.App) {
 	app.Post("/api/login", controllers.Login)
 	app.Get("/api/user", controllers.User)
 	app.Post("/api/logout", controllers.Logout)
+	app.Post("/api/music", controllers.GetRandomMusic)
 }

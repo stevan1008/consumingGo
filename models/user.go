@@ -4,6 +4,6 @@ type User struct {
 	Id uint   	 		`json:"id" gorm:"unique"`
 	Name string	 		`json:"name"`
 	Email string 		`gorm:"unique"`
-	Password []byte	`json:"-"`
+	Password []byte		`json:"-"`
 }
 
