@@ -161,7 +161,6 @@ func FilterSong(c *fiber.Ctx) error {
 	song, _ := GetSong(name, artist, album)
 	fmt.Println("Song: ", song)
 	if song.ID == 0 {
-		fmt.Println("Entra en error")
 		c.Status(fiber.StatusNotFound)
 		songStored := GetSongOfAllClients(name, artist, album)
 		for _, elem := range songStored {

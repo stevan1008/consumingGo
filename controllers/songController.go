@@ -21,10 +21,10 @@ type filter struct {
 
 var Config, _ = config.LoadConfig("./")
 
-func GetSongOfAllClients(name string, artist string, album string) (merge []any) {
+func GetSongOfAllClients(name string, artist string, album string) (element []any) {
 
-	var filterApple string = "term=" + name
-	var filterChart string = "song=" + name + "&artist=" + artist
+	filterApple := "term=" + name
+	filterChart := "song=" + name + "&artist=" + artist
 
 	if len(name) > 0 {
 		filterApple = "term=" + name
@@ -43,20 +43,19 @@ func GetSongOfAllClients(name string, artist string, album string) (merge []any)
 	dataChart := GetSongClientChart(filterChart)
 	dataApple := GetSongApple(filterApple)
 
-	merge = append(dataChart, dataApple...)
-	fmt.Println(len(merge))
+	element = append(dataChart, dataApple...)
+	fmt.Println(len(element))
 
 	return
 
 }
 
-func GetSongClientChart(url string) (responseSongs []any) {
+func GetSongClientChart(url string) (songs []any) {
 
-	var responseObject = getSongSoap(Config.ClientChartlyricsApi + url)
+	var resp = getSongSoap(Config.ClientChartlyricsApi + url)
 
-	for i := 0; i < len(responseObject.SearchLyricResult)-1; i++ {
+	for _, song := range resp.SearchLyricResult {
 		maping := make(map[string]interface{})
-		song := responseObject.SearchLyricResult[i]
 		maping["IdSong"] = song.TrackId
 		maping["Name"] = song.Song
 		maping["artist"] = song.Artist
@@ -66,18 +65,17 @@ func GetSongClientChart(url string) (responseSongs []any) {
 		maping["Price"] = song.SongRank
 		maping["Origin"] = "chartlyrics"
 
-		responseSongs = append(responseSongs, maping)
+		songs = append(songs, maping)
 	}
 	return
 }
 
-func GetSongApple(url string) (responseSongs []any) {
+func GetSongApple(url string) (songs []any) {
 
-	var responseObject = getSongRest(Config.ClientAppleApi + url)
+	var resp = getSongRest(Config.ClientAppleApi + url)
 
-	for i := 0; i < responseObject.ResultCount; i++ {
+	for _, song := range resp.Results {
 		maping := make(map[string]interface{})
-		song := responseObject.Results[i]
 		maping["IdSong"] = song["trackId"]
 		maping["Name"] = song["trackName"]
 		maping["artist"] = song["artistName"]
@@ -87,31 +85,31 @@ func GetSongApple(url string) (responseSongs []any) {
 		maping["Price"] = song["trackPrice"]
 		maping["Origin"] = "Apple"
 
-		responseSongs = append(responseSongs, maping)
+		songs = append(songs, maping)
 	}
 	return
 }
 
-func getSongRest(url string) (responseObject models.ResponseClientApple) {
+func getSongRest(url string) (respSong models.ResponseClientApple) {
 
-	response, err := http.Get(url)
+	resp, err := http.Get(url)
 
 	if err != nil {
 		fmt.Print(err.Error())
 	}
 
-	responseData, err := ioutil.ReadAll(response.Body)
+	respData, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		fmt.Print(err.Error())
 	}
 
-	json.Unmarshal(responseData, &responseObject)
+	json.Unmarshal(respData, &respSong)
 
 	return
 }
 
-func getSongSoap(url string) (responseObject models.ResponseClientChartlyrics) {
+func getSongSoap(url string) (respSong models.ResponseClientChartlyrics) {
 
 	c := &http.Client{
 		Transport: &http.Transport{
@@ -125,13 +123,13 @@ func getSongSoap(url string) (responseObject models.ResponseClientChartlyrics) {
 		log.Fatal(err)
 	}
 
-	website, err := ioutil.ReadAll(html.Body)
+	data, err := ioutil.ReadAll(html.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
 	html.Body.Close()
 
-	xml.Unmarshal(website, &responseObject)
+	xml.Unmarshal(data, &respSong)
 
 	return
 }
